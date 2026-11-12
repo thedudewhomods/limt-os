@@ -53,6 +53,14 @@ jobs:
           test -d "$ANDROID_HOME/build-tools/35.0.0"
           adb version
 
+      - name: Set up Python 3
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Validate and repair project files
+        run: python scripts/prebuild_check.py
+
       - name: Build debug APK
         run: gradle --no-daemon --stacktrace --warning-mode all :app:assembleDebug
 
