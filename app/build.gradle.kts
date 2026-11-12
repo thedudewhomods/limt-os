@@ -4,7 +4,7 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose") version "2.0.21"
 }
 
-android {
+val limtApiBaseUrl = providers.gradleProperty("LIMT_API_BASE_URL")\n    .orElse("https://YOUR_BACKEND_HOST")\n    .get()\n\nandroid {
     namespace = "com.limtos.app"
     compileSdk = 35
 
