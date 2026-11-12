@@ -1,0 +1,50 @@
+name: Limt-OS ISO
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, limt-os-bootable-iso]
+    paths:
+      - "build/iso/**"
+      - "scripts/omni-exec.py"
+      - "config/limt-settings.yaml"
+      - ".github/workflows/limt-os-iso.yml"
+      - "docs/ISO-BUILD.md"
+
+permissions:
+  contents: read
+
+jobs:
+  build-amd64-iso:
+    name: Build x86-64 live ISO
+    runs-on: ubuntu-22.04
+    timeout-minutes: 90
+    steps:
+      - name: Check out Limt-OS
+        uses: actions/checkout@v4
+
+      - name: Install live-build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            live-build debootstrap xorriso squashfs-tools \
+            grub-efi-amd64-bin grub-pc-bin mtools dosfstools
+
+      - name: Build ISO
+        run: sudo -E bash build/iso/build-iso.sh
+
+      - name: Verify artifact and checksum
+        run: |
+          test -s dist/limt-os-amd64.iso
+          test -s dist/limt-os-amd64.iso.sha256
+          sha256sum -c dist/limt-os-amd64.iso.sha256
+
+      - name: Upload ISO
+        uses: actions/upload-artifact@v4
+        with:
+          name: limt-os-amd64-iso
+          path: |
+            dist/limt-os-amd64.iso
+            dist/limt-os-amd64.iso.sha256
+          if-no-files-found: error
+          retention-days: 14

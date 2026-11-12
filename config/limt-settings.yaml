@@ -1,0 +1,30 @@
+schema_version: 1
+product:
+  name: Limt-OS
+  session_name: Limt-OS Live
+desktop:
+  environment: xfce
+  adaptive_mode: planned
+  external_display_detection: planned
+compatibility:
+  windows:
+    status: planned
+    backend: wine
+  android:
+    status: planned
+    backend: waydroid
+  ios:
+    status: inspection-only
+    execution: unsupported
+virtualization:
+  qemu:
+    status: included-in-live-image
+    acceleration: host-dependent
+  utm:
+    status: guest-profile-required
+  vmware:
+    status: guest-profile-required
+security:
+  run_untrusted_apps_as_root: false
+  disable_code_signing: false
+  allow_writable_executable_memory_by_default: false
