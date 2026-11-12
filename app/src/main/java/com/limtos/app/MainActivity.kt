@@ -61,8 +61,19 @@ fun LimtApp() {
     var input by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
     var pendingFile by remember { mutableStateOf<GeneratedFile?>(null) }
+    var modelMenuOpen by remember { mutableStateOf(false) }
+    var models by remember { mutableStateOf(listOf("gpt-5.5")) }
+    var selectedModel by remember { mutableStateOf("gpt-5.5") }
     val scope = rememberCoroutineScope()
     val info = remember { deviceInfo() }
+
+    LaunchedEffect(Unit) {
+        val remoteModels = withContext(Dispatchers.IO) { loadModels() }
+        if (remoteModels.isNotEmpty()) {
+            models = remoteModels
+            selectedModel = remoteModels.first()
+        }
+    }
 
     val saveFile = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/octet-stream")
@@ -81,13 +92,32 @@ fun LimtApp() {
             Column(Modifier.fillMaxSize().padding(padding).padding(16.dp)) {
                 Text("Limt OS", style = MaterialTheme.typography.headlineMedium)
                 Text("AI Android project builder", style = MaterialTheme.typography.bodySmall)
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(8.dp))
+                Box {
+                    OutlinedButton(onClick = { modelMenuOpen = true }, enabled = !busy) {
+                        Text("Model: " + selectedModel)
+                    }
+                    DropdownMenu(expanded = modelMenuOpen, onDismissRequest = { modelMenuOpen = false }) {
+                        models.forEach { model ->
+                            DropdownMenuItem(
+                                text = { Text(model) },
+                                onClick = {
+                                    selectedModel = model
+                                    modelMenuOpen = false
+                                }
+                            )
+                        }
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
                 Card(shape = RoundedCornerShape(16.dp)) {
                     Column(Modifier.padding(12.dp)) {
                         Text("DEVICE CHECK", style = MaterialTheme.typography.labelLarge)
-                        Text("${info.optString("manufacturer")} ${info.optString("model")}")
-                        Text("Android ${info.optString("android_release")} • SDK ${info.optInt("sdk")}")
-                        Text("SoC: ${info.optString("soc_manufacturer")} ${info.optString("soc_model")}")
+                        Text(info.optString("manufacturer") + " " + info.optString("model"))
+                        Text("Android " + info.optString("android_release") + " • SDK " + info.optInt("sdk"))
+                        Text("Hardware: " + info.optString("hardware"))
+                        Text("ABI: " + info.optString("supported_abis"))
+                        Text("SoC: " + info.optString("soc_manufacturer") + " " + info.optString("soc_model"))
                         Text("Bootloader: Unable to detect bootloader")
                         Text("Serial number: Not collected")
                     }
@@ -111,7 +141,7 @@ fun LimtApp() {
                                         pendingFile = file
                                         saveFile.launch(file.name.substringAfterLast('/'))
                                     }) {
-                                        Text("Save ${file.name}")
+                                        Text("Save " + file.name)
                                     }
                                 }
                             }
@@ -136,7 +166,9 @@ fun LimtApp() {
                             messages.add(ChatLine("user", prompt))
                             busy = true
                             scope.launch {
-                                val answer = withContext(Dispatchers.IO) { sendMessage(prompt, info, history) }
+                                val answer = withContext(Dispatchers.IO) {
+                                    sendMessage(prompt, info, history, selectedModel)
+                                }
                                 messages.add(ChatLine("assistant", answer.text, answer.files))
                                 busy = false
                             }
@@ -150,23 +182,47 @@ fun LimtApp() {
     }
 }
 
-private fun sendMessage(prompt: String, info: JSONObject, history: List<JSONObject>): ChatReply {
+private fun loadModels(): List<String> {
+    return try {
+        val request = Request.Builder()
+            .url(BuildConfig.API_BASE_URL.trimEnd('/') + "/models")
+            .get()
+            .build()
+        OkHttpClient().newCall(request).execute().use { response ->
+            if (!response.isSuccessful) emptyList()
+            else {
+                val array = JSONObject(response.body?.string().orEmpty()).optJSONArray("models") ?: JSONArray()
+                (0 until array.length()).map { array.optString(it) }.filter { it.isNotBlank() }
+            }
+        }
+    } catch (_: Exception) {
+        emptyList()
+    }
+}
+
+private fun sendMessage(
+    prompt: String,
+    info: JSONObject,
+    history: List<JSONObject>,
+    model: String
+): ChatReply {
     return try {
         val historyJson = JSONArray()
         history.forEach { historyJson.put(it) }
         val payload = JSONObject()
             .put("message", prompt)
+            .put("model", model)
             .put("device_info", info)
             .put("history", historyJson)
         val body = payload.toString().toRequestBody("application/json".toMediaType())
         val request = Request.Builder()
-            .url("${BuildConfig.API_BASE_URL.trimEnd('/')}/chat")
+            .url(BuildConfig.API_BASE_URL.trimEnd('/') + "/chat")
             .post(body)
             .build()
         OkHttpClient().newCall(request).execute().use { response ->
             val responseText = response.body?.string().orEmpty()
             if (!response.isSuccessful) {
-                ChatReply("Backend error: HTTP ${response.code}. Check the backend URL and server logs.")
+                ChatReply("Backend error: HTTP " + response.code + ". Check the backend URL and server logs.")
             } else {
                 val json = JSONObject(responseText)
                 val fileArray = json.optJSONArray("files") ?: JSONArray()
@@ -178,7 +234,7 @@ private fun sendMessage(prompt: String, info: JSONObject, history: List<JSONObje
                 ChatReply(json.optString("reply", "No reply returned."), files)
             }
         }
-    } catch (e: Exception) {
+    } catch (_: Exception) {
         ChatReply("Couldn't reach the Limt OS backend. Set API_BASE_URL to your HTTPS server address and try again.")
     }
 }
