@@ -5,7 +5,7 @@ plugins {
 }
 
 val limtApiBaseUrl = providers.gradleProperty("LIMT_API_BASE_URL")
-    .orElse("https://YOUR_BACKEND_HOST")
+    .orElse("")
     .get()
 
 android {
