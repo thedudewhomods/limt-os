@@ -9,7 +9,7 @@ on:
       - ".github/workflows/build-ios.yml"
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   ios:
