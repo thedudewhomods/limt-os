@@ -61,6 +61,18 @@ jobs:
       - name: Validate and repair project files
         run: python scripts/prebuild_check.py
 
+      - name: Commit generated Kotlin source files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/src/main/java/com/limtos/app/modules
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(android): commit generated module sources [skip ci]"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          else
+            echo "No generated Kotlin source changes to commit."
+          fi
+
       - name: Build debug APK
         env:
           LIMT_API_BASE_URL: ${{ secrets.LIMT_API_BASE_URL }}
