@@ -58,7 +58,8 @@ final class LimtAPI {
         let payload = ChatRequest(message: message, model: model, device_info: LimtDeviceInfo.snapshot,
             history: history.suffix(12).map { ["role": $0.role, "content": $0.content] })
         let data = try JSONEncoder().encode(payload)
-        return try JSONDecoder().decode(ChatResponse.self, from: request(path: "/chat", method: "POST", body: data))
+        let responseData = try await request(path: "/chat", method: "POST", body: data)
+        return try JSONDecoder().decode(ChatResponse.self, from: responseData)
     }
     private func request(path: String, method: String, body: Data? = nil) async throws -> Data {
         guard let baseURL, let url = URL(string: path, relativeTo: baseURL) else { throw LimtAPIError.invalidURL }
