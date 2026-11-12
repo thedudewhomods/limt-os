@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: limt-os-api
+    runtime: docker
+    plan: free
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_MODEL
+        value: gpt-5.5
+      - key: OPENAI_ALLOWED_MODELS
+        value: gpt-5.5
