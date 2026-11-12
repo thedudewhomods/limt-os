@@ -35,6 +35,9 @@ jobs:
             live-build debootstrap squashfs-tools xorriso \
             grub-pc-bin grub-efi-amd64-bin mtools
 
+      - name: Prepare live-build hooks
+        run: chmod 0755 config/hooks/live/0100-limt-desktop.hook.chroot
+
       - name: Configure live image
         run: |
           sudo lb config \
