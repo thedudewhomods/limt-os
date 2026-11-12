@@ -1,0 +1,14 @@
+#!/bin/sh
+set -eu
+printf '%s\n' \
+  'Limt-OS live environment' \
+  '------------------------' \
+  'This is an experimental x86-64 live image.' \
+  'Windows PE: Wine integration is planned; install Wine separately where available.' \
+  'Android APK: use a configured Android container/runtime; APK files are not native Linux executables.' \
+  'iOS IPA: metadata inspection only; no iOS execution or signing bypass is provided.' \
+  '' \
+  'Package inspection/dispatch: omni-exec /path/to/package' \
+  'System information: uname -a' \
+  '' \
+  'Do not run untrusted applications outside an isolated environment.'
