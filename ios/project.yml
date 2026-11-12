@@ -19,7 +19,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.limtos.app
         PRODUCT_NAME: Limt OS
         INFOPLIST_KEY_CFBundleDisplayName: Limt OS
-        INFOPLIST_KEY_LimtAPIBaseURL: https://YOUR_BACKEND_HOST
+        INFOPLIST_KEY_LimtAPIBaseURL: ""
         INFOPLIST_KEY_UIUserInterfaceStyle: Dark
         GENERATE_INFOPLIST_FILE: YES
         CODE_SIGN_STYLE: Automatic
