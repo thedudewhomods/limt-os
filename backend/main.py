@@ -9,10 +9,10 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-app = FastAPI(title="Limt OS API", version="0.2.0")
+app = FastAPI(title="Limt OS API", version="0.2.1")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Native Android clients do not use browser CORS; restrict web origins if a web client is added.
+    allow_origins=["*"],
     allow_credentials=False,
     allow_methods=["GET", "POST"],
     allow_headers=["Content-Type", "Authorization"],
@@ -46,7 +46,7 @@ def extract_files(text: str) -> list[dict[str, str]]:
 
 @app.get("/health")
 def health():
-    return {"ok": True, "service": "limt-os-api", "version": "0.2.0"}
+    return {"ok": True, "service": "limt-os-api", "version": "0.2.1"}
 
 @app.get("/models")
 def models():
@@ -79,7 +79,6 @@ def chat(request: ChatRequest):
             messages.append({"role": role, "content": content[:12000]})
     messages.append({"role": "user", "content": request.message})
     try:
-        # Chat Completions is supported by OpenAI and many OpenAI-compatible gateways.
         result = client.chat.completions.create(
             model=model,
             messages=messages,
