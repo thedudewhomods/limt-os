@@ -33,7 +33,7 @@ enum LimtAPIError: LocalizedError {
     case server(String)
     var errorDescription: String? {
         switch self {
-        case .invalidURL: return "Set LimtAPIBaseURL to your HTTPS backend address."
+        case .invalidURL: return "Limt OS is not connected yet. This build has no backend URL. Deploy the FastAPI backend, set the LIMT_API_BASE_URL GitHub Actions secret to its HTTPS address, and rebuild the app."
         case .server(let value): return value
         }
     }
