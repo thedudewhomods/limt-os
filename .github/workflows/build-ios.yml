@@ -25,6 +25,18 @@ jobs:
         working-directory: ios
         run: xcodegen generate
 
+      - name: Commit generated Xcode project
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ios/LimtOS.xcodeproj
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(ios): commit generated Xcode project [skip ci]"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          else
+            echo "No generated Xcode project changes to commit."
+          fi
+
       - name: Build iOS Simulator app
         working-directory: ios
         env:
@@ -52,7 +64,7 @@ jobs:
             -sdk iphoneos -configuration Release \
             -derivedDataPath build/device \
             -destination 'generic/platform=iOS' \
-            INFOPLIST_KEY_LimtAPIBaseURL="${LIMT_API_BASE_URL:-https://YOUR_BACKEND_HOST}" \
+            INFOPLIST_KEY_LimtAPIBaseURL="${LIMT_API_BASE_URL:-}" \
             CODE_SIGNING_ALLOWED=NO build
 
       - name: Package unsigned IPA
