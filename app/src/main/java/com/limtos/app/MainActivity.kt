@@ -16,7 +16,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Smartphone
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -176,7 +176,7 @@ fun LimtApp() {
                                 }
                             }
                             IconButton(onClick = { showDeviceInfo = true }) {
-                                Icon(Icons.Default.Smartphone, contentDescription = "Device information")
+                                Icon(Icons.Default.Info, contentDescription = "Device information")
                             }
                         },
                         colors = TopAppBarDefaults.topAppBarColors(
