@@ -53,7 +53,7 @@ struct ContentView: View {
                         Button(model) { selectedModel = model }
                     }
                     Divider()
-                    Button("Device information", systemImage: "iphone.gen3") { showDeviceInfo = true }
+                    Button { showDeviceInfo = true } label: { Label("Device information", systemImage: "iphone.gen3") }
                 } label: {
                     HStack(spacing: 5) {
                         Text(selectedModel).font(.caption).foregroundStyle(.secondary)
