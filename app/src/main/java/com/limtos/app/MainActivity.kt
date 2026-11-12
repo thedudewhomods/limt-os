@@ -4,6 +4,8 @@ import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -11,6 +13,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -19,9 +22,12 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONArray
 import org.json.JSONObject
 
-data class ChatLine(val role: String, val text: String)
+data class GeneratedFile(val name: String, val content: String)
+data class ChatLine(val role: String, val text: String, val files: List<GeneratedFile> = emptyList())
+data class ChatReply(val text: String, val files: List<GeneratedFile> = emptyList())
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -48,11 +54,27 @@ private fun deviceInfo(): JSONObject = JSONObject().apply {
 
 @Composable
 fun LimtApp() {
-    val messages = remember { mutableStateListOf(ChatLine("assistant", "Welcome to Limt OS. Scan your device details or ask me to generate an OS project.")) }
+    val context = LocalContext.current
+    val messages = remember {
+        mutableStateListOf(ChatLine("assistant", "Welcome to Limt OS. Scan your device details or ask me to generate an OS project."))
+    }
     var input by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
+    var pendingFile by remember { mutableStateOf<GeneratedFile?>(null) }
     val scope = rememberCoroutineScope()
     val info = remember { deviceInfo() }
+
+    val saveFile = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/octet-stream")
+    ) { uri ->
+        val file = pendingFile
+        if (uri != null && file != null) {
+            context.contentResolver.openOutputStream(uri)?.use {
+                it.write(file.content.toByteArray(Charsets.UTF_8))
+            }
+        }
+        pendingFile = null
+    }
 
     MaterialTheme(colorScheme = darkColorScheme()) {
         Scaffold { padding ->
@@ -81,7 +103,18 @@ fun LimtApp() {
                                 else MaterialTheme.colorScheme.surfaceVariant
                             )
                         ) {
-                            Text(line.text, Modifier.padding(12.dp))
+                            Column(Modifier.padding(12.dp)) {
+                                Text(line.text)
+                                line.files.forEach { file ->
+                                    Spacer(Modifier.height(6.dp))
+                                    OutlinedButton(onClick = {
+                                        pendingFile = file
+                                        saveFile.launch(file.name.substringAfterLast('/'))
+                                    }) {
+                                        Text("Save ${file.name}")
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -99,11 +132,12 @@ fun LimtApp() {
                         val prompt = input.trim()
                         if (prompt.isNotEmpty() && !busy) {
                             input = ""
+                            val history = messages.map { JSONObject().put("role", it.role).put("content", it.text) }
                             messages.add(ChatLine("user", prompt))
                             busy = true
                             scope.launch {
-                                val answer = withContext(Dispatchers.IO) { sendMessage(prompt, info) }
-                                messages.add(ChatLine("assistant", answer))
+                                val answer = withContext(Dispatchers.IO) { sendMessage(prompt, info, history) }
+                                messages.add(ChatLine("assistant", answer.text, answer.files))
                                 busy = false
                             }
                         }
@@ -116,20 +150,35 @@ fun LimtApp() {
     }
 }
 
-private fun sendMessage(prompt: String, info: JSONObject): String {
+private fun sendMessage(prompt: String, info: JSONObject, history: List<JSONObject>): ChatReply {
     return try {
-        val payload = JSONObject().put("message", prompt).put("device_info", info)
+        val historyJson = JSONArray()
+        history.forEach { historyJson.put(it) }
+        val payload = JSONObject()
+            .put("message", prompt)
+            .put("device_info", info)
+            .put("history", historyJson)
         val body = payload.toString().toRequestBody("application/json".toMediaType())
         val request = Request.Builder()
             .url("${BuildConfig.API_BASE_URL.trimEnd('/')}/chat")
             .post(body)
             .build()
         OkHttpClient().newCall(request).execute().use { response ->
-            val text = response.body?.string().orEmpty()
-            if (!response.isSuccessful) "Backend error: HTTP ${response.code}. Check the backend URL and server logs."
-            else JSONObject(text).optString("reply", "No reply returned.")
+            val responseText = response.body?.string().orEmpty()
+            if (!response.isSuccessful) {
+                ChatReply("Backend error: HTTP ${response.code}. Check the backend URL and server logs.")
+            } else {
+                val json = JSONObject(responseText)
+                val fileArray = json.optJSONArray("files") ?: JSONArray()
+                val files = (0 until fileArray.length()).mapNotNull { index ->
+                    val item = fileArray.optJSONObject(index) ?: return@mapNotNull null
+                    val name = item.optString("name")
+                    if (name.isBlank()) null else GeneratedFile(name, item.optString("content"))
+                }
+                ChatReply(json.optString("reply", "No reply returned."), files)
+            }
         }
     } catch (e: Exception) {
-        "Couldn't reach the Limt OS backend. Set API_BASE_URL to your HTTPS server address and try again."
+        ChatReply("Couldn't reach the Limt OS backend. Set API_BASE_URL to your HTTPS server address and try again.")
     }
 }
