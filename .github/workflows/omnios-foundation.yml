@@ -1,0 +1,30 @@
+name: OmniOS foundation checks
+
+on:
+  push:
+    branches: [omnios-foundation]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Compile Python sources
+        run: python3 -m py_compile scripts/omni-exec.py
+      - name: Validate dispatcher syntax
+        run: python3 scripts/omni-exec.py --help
+      - name: Check kernel fragment
+        run: |
+          test -s kernel/omni.fragment
+          grep -q '^CONFIG_BINFMT_MISC=y$' kernel/omni.fragment
+      - name: Check architecture documentation
+        run: |
+          test -s docs/OMNIOS-ARCHITECTURE.md
+          grep -q 'iOS' docs/OMNIOS-ARCHITECTURE.md

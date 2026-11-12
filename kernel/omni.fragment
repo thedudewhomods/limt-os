@@ -1,0 +1,34 @@
+# Linux kernel config fragment for OmniOS foundation.
+# Merge with an architecture-specific defconfig and verify with scripts/config.
+CONFIG_64BIT=y
+CONFIG_BINFMT_ELF=y
+CONFIG_BINFMT_SCRIPT=y
+CONFIG_BINFMT_MISC=y
+CONFIG_NAMESPACES=y
+CONFIG_USER_NS=y
+CONFIG_PID_NS=y
+CONFIG_NET_NS=y
+CONFIG_UTS_NS=y
+CONFIG_IPC_NS=y
+CONFIG_CGROUPS=y
+CONFIG_CGROUP_PIDS=y
+CONFIG_CGROUP_DEVICE=y
+CONFIG_SECCOMP=y
+CONFIG_SECCOMP_FILTER=y
+CONFIG_USERFAULTFD=y
+CONFIG_MEMFD_CREATE=y
+CONFIG_TRANSPARENT_HUGEPAGE=y
+CONFIG_DMA_SHARED_BUFFER=y
+CONFIG_DRM=y
+CONFIG_VFIO=y
+CONFIG_VHOST_NET=y
+CONFIG_KVM=y
+CONFIG_ANDROID_BINDER_IPC=y
+CONFIG_ANDROID_BINDERFS=y
+
+# Enable the matching option for the build target only:
+# x86_64 Intel: CONFIG_KVM_INTEL=y
+# x86_64 AMD:   CONFIG_KVM_AMD=y
+# ARM64 KVM:    CONFIG_KVM_ARM_HOST=y
+# Optional legacy Android userspace only, if present in the chosen kernel:
+# CONFIG_ASHMEM=y

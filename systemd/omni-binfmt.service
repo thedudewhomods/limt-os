@@ -1,0 +1,19 @@
+[Unit]
+Description=OmniOS binary format support
+Documentation=https://github.com/thedudewhomods/limt-os
+After=proc-sys-fs-binfmt_misc.mount
+Wants=proc-sys-fs-binfmt_misc.mount
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/mount -t binfmt_misc binfmt_misc /proc/sys/fs/binfmt_misc
+ExecStartPost=/usr/bin/test -d /proc/sys/fs/binfmt_misc
+ExecStop=/usr/bin/umount /proc/sys/fs/binfmt_misc
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target
