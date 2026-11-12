@@ -1,64 +1,30 @@
-# Limt OS
+# Limt-OS
 
-An Android device information viewer and AI-assisted Android OS project generator.
+Limt-OS is an experimental Linux operating-system project. The repository is organized around native OS source, compatibility runtimes, package inspection, virtualization, and a bootable live-image build.
 
-## Current starter features
+## Source layout
 
-- Kotlin + Jetpack Compose Android application.
-- Read-only device details: manufacturer, model, Android release, SDK, hardware, supported ABIs and SoC fields when Android exposes them.
-- Serial number is deliberately not collected.
-- Bootloader state is displayed as **Unable to detect bootloader**. The starter does not guess or change bootloader state.
-- FastAPI backend with configurable OpenAI-compatible API endpoint.
-- Server-configured model allowlist exposed through `GET /models`; the Android app displays a model picker.
-- Multi-turn chat context.
-- AI-generated files parsed from `---FILE: path---` blocks and individually saved with Android's system document picker.
-- Health endpoint at `GET /health`.
+- `src/limt/dispatcher.py`: native Limt-OS package inspection and runtime dispatch logic.
+- `scripts/omni-exec.py`: compatibility command-line entry point.
+- `kernel/omni.fragment`: optional kernel configuration fragment.
+- `systemd/omni-binfmt.service`: package-dispatch integration service.
+- `build/iso/`: Debian live-build configuration for the first x86-64 ISO.
+- `config/`: OS and device configuration.
+- `backend/`: optional API service, not required to boot the ISO.
 
-## Project layout
+## Package support
 
-- `app/`: Android application
-- `backend/main.py`: AI API service
-- `backend/requirements.txt`: Python dependencies
-- `backend/.env.example`: environment variable template
-- `backend/Dockerfile`: container build
-- `config/device_profiles.yaml`: compatibility policy/profile placeholder
+- Windows PE: detected by its PE header and launched only if Wine is installed.
+- APK: inspected as a ZIP package and installed only into an explicitly configured Waydroid runtime.
+- IPA: metadata inspection only. Linux does not run arbitrary iOS apps.
+- Unknown packages: rejected; no attempt is made to execute them.
 
-## Configure the AI backend
+APK and IPA files are archives, not native executable formats. They must not be registered as executable ZIP magic in `binfmt_misc`.
 
-1. Create a Python virtual environment.
-2. Install dependencies: `pip install -r backend/requirements.txt`.
-3. Copy `backend/.env.example` to `backend/.env`.
-4. Put a newly created provider API key in the private `.env` file or deployment secret manager as `OPENAI_API_KEY`.
-5. Set `OPENAI_MODEL` to the model identifier supported by your provider.
-6. Add selectable model IDs as a comma-separated list in `OPENAI_ALLOWED_MODELS`.
-7. For the official OpenAI API, leave `OPENAI_BASE_URL` unset. For an OpenAI-compatible gateway, set it to that provider's documented API base URL.
-8. Start from the `backend` directory: `uvicorn main:app --host 0.0.0.0 --port 8000`.
+## Build the first ISO
 
-Never put a real key in Git, Android source code, an APK, screenshots, or chat messages. Keep it only in private server environment settings. Use HTTPS when deploying. Add authentication and rate limiting before exposing the backend publicly; the starter is not hardened for public production use.
+See [docs/ISO-BUILD.md](docs/ISO-BUILD.md). The first image targets x86-64. ARM64 requires a separate build and validation pass. A CI artifact is not considered boot-tested until it has been tested in UTM and VMware.
 
-## Build the Android app
+## Third-party integration
 
-1. Open this repository in Android Studio.
-2. Wait for Gradle sync.
-3. Deploy the backend to an HTTPS host.
-4. Replace `https://YOUR_BACKEND_HOST` in `app/build.gradle.kts` with your backend base URL (without a trailing slash).
-5. Build and run the `app` configuration on an Android device.
-
-A Gradle wrapper is not included yet. Android Studio can import the project, but the app has not been built or device-tested in this repository.
-
-## Generated files
-
-Ask the assistant to output files using this format:
-
-```text
----FILE: relative/path/to/file.ext---
-complete file contents
-```
-
-The backend returns file names and contents separately. The Android app displays a save action for each generated file.
-
-## Compatibility and safety limits
-
-This is a project generator, not an OS installer or flasher. It does not unlock bootloaders, flash partitions, install firmware, or bypass device protections. Hardware detection is best-effort and cannot prove that a phone has the required kernel sources, vendor files, drivers, or a supported build path. The compatibility profile database is currently a placeholder, so the app must not claim a device is compatible until a verified profile is added.
-
-Serial numbers are not needed for compatibility checks and are not collected. Android restricts access to persistent device identifiers for ordinary apps.
+See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Upstream application projects are treated as references for portable core ideas and libraries; platform-specific Android/iOS app shells are not part of this Linux OS tree.

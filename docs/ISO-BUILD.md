@@ -1,47 +1,29 @@
 # Building the Limt-OS live ISO
 
-## Current target
+The first target is a Debian 12 (Bookworm) amd64/x86-64 live ISO with XFCE, basic diagnostic tools, QEMU command-line utilities, and Limt-OS's source-based package dispatcher.
 
-The first image is a **Debian 12 (Bookworm), amd64/x86-64 live ISO** with an XFCE desktop, basic diagnostics, QEMU user tools, and the existing OmniOS package dispatcher. It is intended for x86-64 UTM and VMware guests using a compatible BIOS/UEFI virtual machine profile.
+## Build
 
-It is not a universal-CPU image. ARM64 is a separate build target and is not claimed to boot until its own image and VM tests pass.
-
-## Build locally
-
-On a Debian 12 or compatible Linux build host:
+On Debian 12 or a compatible Linux build host:
 
 ```sh
 sudo apt update
-sudo apt install -y live-build debootstrap xorriso squashfs-tools grub-efi-amd64-bin grub-pc-bin mtools dosfstools
-./build/iso/build-iso.sh
+sudo apt install -y live-build debootstrap debian-archive-keyring xorriso squashfs-tools grub-efi-amd64-bin grub-pc-bin mtools dosfstools
+sudo bash build/iso/build-iso.sh
 ```
 
-The result is written to `dist/limt-os-amd64.iso` with a SHA-256 file.
+The script explicitly pins the bootstrap/chroot/binary mirrors to Debian Bookworm. The archive-signing keyring must be installed; the missing keyring warning and Ubuntu trixie URL in earlier CI logs were caused by an unpinned mirror/keyring configuration. The subsequent `chroot /usr/bin/env` error was a cascade after debootstrap failed, not a separate root cause.
 
-## GitHub Actions
+The image and checksum are written to `dist/limt-os-amd64.iso` and `dist/limt-os-amd64.iso.sha256`.
 
-The `Limt-OS ISO` workflow builds the ISO and uploads it as a workflow artifact. A successful workflow run is required before calling the image boot-tested. The artifact is not automatically a GitHub Release.
+## Virtual machines
 
-## UTM and VMware
+Use an x86-64 Linux guest profile in UTM or VMware, UEFI firmware, at least 2 vCPUs, 4 GB RAM, and a 25 GB virtual disk. Attach the ISO as a virtual CD/DVD. UTM emulation on ARM hosts may be slow. Host and virtual firmware compatibility still need testing.
 
-Create a new Linux virtual machine with:
-- Architecture: x86-64 / x86_64
-- Firmware: UEFI (try BIOS only if the VM's firmware setup requires it)
-- 2 or more virtual CPUs
-- 4 GB RAM recommended
-- 25 GB virtual disk
-- Attach the ISO as a virtual CD/DVD and boot from it
+## Runtime limits
 
-UTM's emulated x86-64 mode on an ARM host can be much slower than native virtualization. VMware support depends on the host product and CPU virtualization support. This project does not guarantee booting on every host.
-
-## Runtime support status
-
-- Windows PE: the dispatcher recognizes PE-style MZ files and uses Wine only when Wine is installed. Application compatibility is not guaranteed.
-- APK: the dispatcher inspects the ZIP contents and can pass a valid APK to an already configured Waydroid installation. Waydroid is not included in this initial ISO.
-- IPA: metadata inspection only. Linux cannot run arbitrary iOS apps by changing Mach-O headers or loading them as shared libraries.
-- QEMU: command-line QEMU tools are included; guest acceleration depends on host CPU and VM configuration.
-- DeX-style adaptive desktop: planned. The initial image uses XFCE and does not claim Samsung DeX parity.
-
-## Reproducibility and testing
-
-Pin package versions and base-image snapshots before treating builds as reproducible. Boot-test each architecture in UTM and VMware separately, then record the host, firmware, virtual CPU model, RAM, and result. A CI artifact existing is not proof that every VM boots.
+- Windows PE: Wine is detected when installed; compatibility varies by application and CPU architecture.
+- APK: Waydroid is optional and is not bundled in this first ISO.
+- IPA: metadata inspection only; no iOS runtime or signing bypass is included.
+- DeX-style adaptive desktop: future work; the first image uses XFCE.
+- ARM64: separate future build target, not yet available.

@@ -7,33 +7,47 @@ OUT="${ROOT}/dist"
 ARCH="${ARCH:-amd64}"
 
 if [[ "$ARCH" != "amd64" ]]; then
-  echo "This first bootable ISO builder supports amd64 only. ARM64 needs a separate tested boot path." >&2
+  echo "This builder currently supports amd64 only; ARM64 needs its own tested image." >&2
   exit 2
 fi
-
-command -v lb >/dev/null || { echo "live-build is required (install the Debian live-build package)." >&2; exit 127; }
+if [[ "$(id -u)" -ne 0 ]]; then
+  echo "Run as root: sudo bash build/iso/build-iso.sh" >&2
+  exit 1
+fi
+command -v lb >/dev/null || { echo "Install live-build first." >&2; exit 127; }
 mkdir -p "$WORK" "$OUT"
 cd "$WORK"
-
 lb clean --purge || true
+
+# Force Debian mirrors explicitly: Ubuntu-hosted live-build otherwise selected
+# the runner's Ubuntu archive and attempted to fetch Ubuntu's trixie suite.
 lb config \
   --distribution bookworm \
+  --parent-distribution bookworm \
   --architectures amd64 \
   --binary-images iso-hybrid \
   --archive-areas "main contrib non-free-firmware" \
   --bootloaders "grub-efi" \
   --debian-installer none \
   --apt-recommends true \
+  --keyring-packages debian-archive-keyring \
+  --mirror-bootstrap http://deb.debian.org/debian/ \
+  --mirror-bootstrap-security http://security.debian.org/debian-security/ \
+  --mirror-chroot http://deb.debian.org/debian/ \
+  --mirror-chroot-security http://security.debian.org/debian-security/ \
+  --mirror-binary http://deb.debian.org/debian/ \
+  --mirror-binary-security http://security.debian.org/debian-security/ \
   --bootappend-live "boot=live components username=limt hostname=limt-os quiet"
 
-mkdir -p config/package-lists config/includes.chroot/usr/local/bin
+mkdir -p config/package-lists config/includes.chroot/usr/local/bin config/includes.chroot/usr/local/lib/limt-os
 cp "$ROOT/build/iso/package-list.chroot" config/package-lists/limt-os.list.chroot
 install -m 0755 "$ROOT/scripts/omni-exec.py" config/includes.chroot/usr/local/bin/omni-exec
 install -m 0755 "$ROOT/build/iso/limt-welcome" config/includes.chroot/usr/local/bin/limt-welcome
+cp -R "$ROOT/src/limt" config/includes.chroot/usr/local/lib/limt-os/
+printf '%s\n' '#!/usr/bin/env python3' 'import sys' 'sys.path.insert(0, "/usr/local/lib/limt-os")' 'from limt.dispatcher import main' 'raise SystemExit(main())' > config/includes.chroot/usr/local/bin/limt-dispatch
+chmod 0755 config/includes.chroot/usr/local/bin/limt-dispatch
 
-sudo lb build
-
-mkdir -p "$OUT"
+lb build
 ISO="$(find . -maxdepth 1 -type f -name '*.iso' -print -quit)"
 if [[ -z "$ISO" ]]; then
   echo "live-build completed but did not produce an ISO." >&2
