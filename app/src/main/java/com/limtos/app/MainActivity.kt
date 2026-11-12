@@ -62,6 +62,7 @@ fun LimtApp() {
     var busy by remember { mutableStateOf(false) }
     var pendingFile by remember { mutableStateOf<GeneratedFile?>(null) }
     var modelMenuOpen by remember { mutableStateOf(false) }
+    var showDeviceInfo by remember { mutableStateOf(false) }
     var models by remember { mutableStateOf(listOf("gpt-5.5")) }
     var selectedModel by remember { mutableStateOf("gpt-5.5") }
     val scope = rememberCoroutineScope()
@@ -88,38 +89,31 @@ fun LimtApp() {
     }
 
     MaterialTheme(colorScheme = darkColorScheme()) {
-        Scaffold { padding ->
+        Scaffold(containerColor = MaterialTheme.colorScheme.background) { padding ->
             Column(Modifier.fillMaxSize().padding(padding).padding(16.dp)) {
                 Text("Limt OS", style = MaterialTheme.typography.headlineMedium)
+                Text("Your AI project workspace", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text("AI Android project builder", style = MaterialTheme.typography.bodySmall)
                 Spacer(Modifier.height(8.dp))
-                Box {
-                    OutlinedButton(onClick = { modelMenuOpen = true }, enabled = !busy) {
-                        Text("Model: " + selectedModel)
-                    }
-                    DropdownMenu(expanded = modelMenuOpen, onDismissRequest = { modelMenuOpen = false }) {
-                        models.forEach { model ->
-                            DropdownMenuItem(
-                                text = { Text(model) },
-                                onClick = {
-                                    selectedModel = model
-                                    modelMenuOpen = false
-                                }
-                            )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Box {
+                        OutlinedButton(onClick = { modelMenuOpen = true }, enabled = !busy) {
+                            Text("Model: " + selectedModel)
+                        }
+                        DropdownMenu(expanded = modelMenuOpen, onDismissRequest = { modelMenuOpen = false }) {
+                            models.forEach { model ->
+                                DropdownMenuItem(
+                                    text = { Text(model) },
+                                    onClick = {
+                                        selectedModel = model
+                                        modelMenuOpen = false
+                                    }
+                                )
+                            }
                         }
                     }
-                }
-                Spacer(Modifier.height(8.dp))
-                Card(shape = RoundedCornerShape(16.dp)) {
-                    Column(Modifier.padding(12.dp)) {
-                        Text("DEVICE CHECK", style = MaterialTheme.typography.labelLarge)
-                        Text(info.optString("manufacturer") + " " + info.optString("model"))
-                        Text("Android " + info.optString("android_release") + " • SDK " + info.optInt("sdk"))
-                        Text("Hardware: " + info.optString("hardware"))
-                        Text("ABI: " + info.optString("supported_abis"))
-                        Text("SoC: " + info.optString("soc_manufacturer") + " " + info.optString("soc_model"))
-                        Text("Bootloader: Unable to detect bootloader")
-                        Text("Serial number: Not collected")
+                    OutlinedButton(onClick = { showDeviceInfo = true }) {
+                        Text("Device info")
                     }
                 }
                 Spacer(Modifier.height(12.dp))
@@ -178,6 +172,24 @@ fun LimtApp() {
                     modifier = Modifier.fillMaxWidth()
                 ) { Text(if (busy) "Thinking…" else "Send") }
             }
+        }
+        if (showDeviceInfo) {
+            AlertDialog(
+                onDismissRequest = { showDeviceInfo = false },
+                title = { Text("Device information") },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(info.optString("manufacturer") + " " + info.optString("model"))
+                        Text("Android " + info.optString("android_release") + " • SDK " + info.optInt("sdk"))
+                        Text("Hardware: " + info.optString("hardware"))
+                        Text("ABI: " + info.optString("supported_abis"))
+                        Text("SoC: " + info.optString("soc_manufacturer") + " " + info.optString("soc_model"))
+                        Text("Bootloader: Unable to detect")
+                        Text("Serial number: Not collected")
+                    }
+                },
+                confirmButton = { TextButton(onClick = { showDeviceInfo = false }) { Text("Done") } }
+            )
         }
     }
 }
