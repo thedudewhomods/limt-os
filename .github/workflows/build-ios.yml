@@ -36,7 +36,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: limt-os-ios-simulator
-          path: ios/build/simulator/Build/Products/Release-iphonesimulator/LimtOS.app
+          path: "ios/build/simulator/Build/Products/Release-iphonesimulator/Limt OS.app"
           if-no-files-found: error
 
   ipa:
