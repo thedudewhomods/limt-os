@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-app = FastAPI(title="Limt OS API", version="0.2.1")
+app = FastAPI(title="Limt OS API", version="0.2.2")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -36,17 +36,17 @@ class ChatRequest(BaseModel):
 
 def extract_files(text: str) -> list[dict[str, str]]:
     files = []
-    pattern = r"---FILE:\\s*([A-Za-z0-9_./-]+)---\\s*\\n(.*?)(?=\\n---FILE:|\\Z)"
+    pattern = r"---FILE:\s*([A-Za-z0-9_./-]+)---\s*\n(.*?)(?=\n---FILE:|\Z)"
     for name, content in re.findall(pattern, text, flags=re.S):
-        safe_name = name.replace("\\\\", "/")
+        safe_name = name.replace("\\", "/")
         if safe_name.startswith("/") or ".." in safe_name.split("/"):
             continue
-        files.append({"name": safe_name, "content": content.rstrip() + "\\n"})
+        files.append({"name": safe_name, "content": content.rstrip() + "\n"})
     return files
 
 @app.get("/health")
 def health():
-    return {"ok": True, "service": "limt-os-api", "version": "0.2.1"}
+    return {"ok": True, "service": "limt-os-api", "version": "0.2.2"}
 
 @app.get("/models")
 def models():
@@ -71,7 +71,7 @@ def chat(request: ChatRequest):
         "Keep paths relative, do not include secrets, and explain any untested assumptions."
     )
     context = "Device information (untrusted diagnostic data): " + str(request.device_info)
-    messages = [{"role": "system", "content": system + "\\n" + context}]
+    messages = [{"role": "system", "content": system + "\n" + context}]
     for item in request.history[-12:]:
         role = item.get("role")
         content = item.get("content", "")
