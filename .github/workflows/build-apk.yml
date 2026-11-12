@@ -62,7 +62,12 @@ jobs:
         run: python scripts/prebuild_check.py
 
       - name: Build debug APK
-        run: gradle --no-daemon --stacktrace --warning-mode all :app:assembleDebug
+        env:
+          LIMT_API_BASE_URL: ${{ secrets.LIMT_API_BASE_URL }}
+        run: |
+          gradle --no-daemon --stacktrace --warning-mode all \
+            -PLIMT_API_BASE_URL="${LIMT_API_BASE_URL:-https://YOUR_BACKEND_HOST}" \
+            :app:assembleDebug
 
       - name: Verify APK output
         run: |
