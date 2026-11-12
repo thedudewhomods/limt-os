@@ -1,0 +1,9 @@
+# Read-only compatibility metadata. Add verified device profiles here.
+schema_version: 1
+policy:
+  serial_number: never_collect
+  bootloader:
+    unknown_label: "Unable to detect bootloader"
+    never_guess: true
+  flashing: disabled
+devices: []
