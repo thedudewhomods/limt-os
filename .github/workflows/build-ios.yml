@@ -1,0 +1,36 @@
+name: Build Limt OS iOS
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "ios/**"
+      - ".github/workflows/build-ios.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  simulator:
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Generate Xcode project
+        working-directory: ios
+        run: xcodegen generate
+      - name: Build iOS Simulator app
+        working-directory: ios
+        run: |
+          xcodebuild -project LimtOS.xcodeproj -scheme LimtOS \
+            -sdk iphonesimulator -configuration Release \
+            -derivedDataPath build/simulator CODE_SIGNING_ALLOWED=NO build
+      - name: Upload simulator app
+        uses: actions/upload-artifact@v4
+        with:
+          name: limt-os-ios-simulator
+          path: ios/build/simulator/Build/Products/Release-iphonesimulator/LimtOS.app
+          if-no-files-found: error
