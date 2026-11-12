@@ -124,10 +124,10 @@ struct ContentView: View {
 
     private var deviceSheet: some View {
         NavigationStack {
-            List(LimtDeviceInfo.snapshot.sorted(by: { $0.key < $1.key }), id: \.key) { item in
+            List(LimtDeviceInfo.snapshot.keys.sorted(), id: \.self) { key in
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(item.key.replacingOccurrences(of: "_", with: " ").capitalized).font(.caption).foregroundStyle(.secondary)
-                    Text(item.value)
+                    Text(key.replacingOccurrences(of: "_", with: " ").capitalized).font(.caption).foregroundStyle(.secondary)
+                    Text(LimtDeviceInfo.snapshot[key] ?? "")
                 }.padding(.vertical, 3)
             }
             .navigationTitle("Device information")
