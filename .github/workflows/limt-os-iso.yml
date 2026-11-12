@@ -19,25 +19,34 @@ jobs:
   build-amd64-iso:
     name: Build x86-64 live ISO
     runs-on: ubuntu-22.04
-    container:
-      image: debian:bookworm
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
-      - name: Install Debian Bookworm live-build dependencies
+
+      # live-build must mount /proc and /dev/pts while preparing its chroot.
+      # GitHub's job-level container is unprivileged, so run the Debian build
+      # in a privileged Docker container on the hosted runner instead.
+      - name: Build ISO in privileged Debian Bookworm container
         run: |
-          apt-get update
-          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-            live-build debootstrap debian-archive-keyring \
-            xorriso squashfs-tools grub-efi-amd64-bin grub-pc-bin \
-            mtools dosfstools ca-certificates python3
-      - name: Build ISO
-        run: bash build/iso/build-iso.sh
+          docker run --privileged --rm \
+            --volume "$GITHUB_WORKSPACE:/workspace" \
+            --workdir /workspace \
+            debian:bookworm \
+            bash -euc '
+              apt-get update
+              DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+                live-build debootstrap debian-archive-keyring \
+                xorriso squashfs-tools grub-efi-amd64-bin grub-pc-bin \
+                mtools dosfstools ca-certificates python3
+              bash build/iso/build-iso.sh
+            '
+
       - name: Verify ISO and checksum
         run: |
           test -s dist/limt-os-amd64.iso
           test -s dist/limt-os-amd64.iso.sha256
           sha256sum -c dist/limt-os-amd64.iso.sha256
+
       - uses: actions/upload-artifact@v4
         with:
           name: limt-os-amd64-iso
