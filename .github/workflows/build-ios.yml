@@ -33,7 +33,7 @@ jobs:
           xcodebuild -project LimtOS.xcodeproj -scheme LimtOS \
             -sdk iphonesimulator -configuration Release \
             -derivedDataPath build/simulator \
-            INFOPLIST_KEY_LimtAPIBaseURL="${LIMT_API_BASE_URL:-https://YOUR_BACKEND_HOST}" \
+            INFOPLIST_KEY_LimtAPIBaseURL="${LIMT_API_BASE_URL:-}" \
             CODE_SIGNING_ALLOWED=NO build
 
       - name: Upload simulator app
