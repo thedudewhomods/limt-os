@@ -1,0 +1,27 @@
+# Limt-OS x86_64 live desktop and virtualization baseline
+live-boot
+live-config
+systemd-sysv
+linux-image-amd64
+xfce4
+lightdm
+network-manager
+sudo
+zenity
+firefox-esr
+qemu-system-x86
+qemu-utils
+qemu-system-gui
+spice-vdagent
+open-vm-tools
+open-vm-tools-desktop
+xserver-xorg-video-qxl
+firmware-linux-free
+firmware-misc-nonfree
+python3
+python3-venv
+python3-pip
+git
+curl
+wget
+ca-certificates
