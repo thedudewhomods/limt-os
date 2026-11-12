@@ -54,5 +54,5 @@ if [[ -z "$ISO" ]]; then
   exit 1
 fi
 cp "$ISO" "$OUT/limt-os-amd64.iso"
-sha256sum "$OUT/limt-os-amd64.iso" > "$OUT/limt-os-amd64.iso.sha256"
+sha256sum "dist/limt-os-amd64.iso" > "dist/limt-os-amd64.iso.sha256"
 echo "Created: $OUT/limt-os-amd64.iso"
