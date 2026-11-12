@@ -19,20 +19,20 @@ mkdir -p "$WORK" "$OUT"
 cd "$WORK"
 lb clean --purge || true
 
-# Force Debian mirrors explicitly: Ubuntu-hosted live-build otherwise selected
-# the runner's Ubuntu archive and attempted to fetch Ubuntu's trixie suite.
+# Use Debian Bookworm live-build (the workflow runs inside debian:bookworm).
+# Bootstrap uses the main mirror; the security mirror is configured for
+# chroot and final-image package operations only.
 lb config \
   --distribution bookworm \
   --parent-distribution bookworm \
   --architectures amd64 \
   --binary-images iso-hybrid \
   --archive-areas "main contrib non-free-firmware" \
-  --bootloaders "grub-efi" \
+  --bootloaders grub-efi \
   --debian-installer none \
   --apt-recommends true \
   --keyring-packages debian-archive-keyring \
   --mirror-bootstrap http://deb.debian.org/debian/ \
-  --mirror-bootstrap-security http://security.debian.org/debian-security/ \
   --mirror-chroot http://deb.debian.org/debian/ \
   --mirror-chroot-security http://security.debian.org/debian-security/ \
   --mirror-binary http://deb.debian.org/debian/ \
