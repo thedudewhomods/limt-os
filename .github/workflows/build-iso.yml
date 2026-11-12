@@ -1,0 +1,70 @@
+name: Build Limt-OS x86_64 ISO
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "config/**"
+      - "build/iso/**"
+      - ".github/workflows/build-iso.yml"
+      - "THIRD_PARTY_NOTICES.md"
+  pull_request:
+    paths:
+      - "config/**"
+      - "build/iso/**"
+      - ".github/workflows/build-iso.yml"
+      - "THIRD_PARTY_NOTICES.md"
+
+permissions:
+  contents: read
+
+jobs:
+  build-iso:
+    name: Build bootable x86_64 live ISO
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - name: Check out Limt-OS
+        uses: actions/checkout@v4
+
+      - name: Install Debian Live build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            live-build debootstrap squashfs-tools xorriso \
+            grub-pc-bin grub-efi-amd64-bin mtools
+
+      - name: Prepare live-build hooks
+        run: chmod 0755 config/hooks/live/0100-limt-desktop.hook.chroot
+
+      - name: Configure live image
+        run: |
+          sudo lb config \
+            --distribution trixie \
+            --architectures amd64 \
+            --binary-images iso-hybrid \
+            --archive-areas "main contrib non-free-firmware" \
+            --bootappend-live "boot=live components username=limt hostname=limt-os"
+
+      - name: Build ISO
+        run: sudo lb build
+
+      - name: Verify ISO
+        run: |
+          ISO="$(find . -maxdepth 1 -type f -name '*.iso' -print -quit)"
+          test -n "$ISO"
+          test -s "$ISO"
+          file "$ISO"
+          sha256sum "$ISO" | tee SHA256SUMS.txt
+          echo "ISO_PATH=$ISO" >> "$GITHUB_ENV"
+
+      - name: Upload bootable ISO
+        uses: actions/upload-artifact@v4
+        with:
+          name: limt-os-x86_64-iso
+          path: |
+            ${{ env.ISO_PATH }}
+            SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 14
