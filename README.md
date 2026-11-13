@@ -1,64 +1,65 @@
-# Limt OS
+# Limt-OS
 
-An Android device information viewer and AI-assisted Android OS project generator.
+Limt-OS is a bootable Linux operating-system project. Its current target is an **x86_64 Debian Live ISO**, not an Android or iOS application.
 
-## Current starter features
+## Current OS preview
 
-- Kotlin + Jetpack Compose Android application.
-- Read-only device details: manufacturer, model, Android release, SDK, hardware, supported ABIs and SoC fields when Android exposes them.
-- Serial number is deliberately not collected.
-- Bootloader state is displayed as **Unable to detect bootloader**. The starter does not guess or change bootloader state.
-- FastAPI backend with configurable OpenAI-compatible API endpoint.
-- Server-configured model allowlist exposed through `GET /models`; the Android app displays a model picker.
-- Multi-turn chat context.
-- AI-generated files parsed from `---FILE: path---` blocks and individually saved with Android's system document picker.
-- Health endpoint at `GET /health`.
+The ISO is built on Debian Trixie with:
 
-## Project layout
+- Linux kernel and Debian Live boot environment
+- XFCE desktop with LightDM
+- NetworkManager for network management
+- A small Limt-OS Settings launcher for display, network, keyboard, window-manager settings, and About
+- QEMU system-emulation tools and SPICE guest-agent support
+- VMware open-vm-tools for supported virtual-machine guests
+- Basic command-line utilities and Python tooling
 
-- `app/`: Android application
-- `backend/main.py`: AI API service
-- `backend/requirements.txt`: Python dependencies
-- `backend/.env.example`: environment variable template
-- `backend/Dockerfile`: container build
-- `config/device_profiles.yaml`: compatibility policy/profile placeholder
+This is an early live-image preview. It is not yet a custom kernel or a fully independent distribution, and it does not support every physical machine.
 
-## Configure the AI backend
+## Build the ISO
 
-1. Create a Python virtual environment.
-2. Install dependencies: `pip install -r backend/requirements.txt`.
-3. Copy `backend/.env.example` to `backend/.env`.
-4. Put a newly created provider API key in the private `.env` file or deployment secret manager as `OPENAI_API_KEY`.
-5. Set `OPENAI_MODEL` to the model identifier supported by your provider.
-6. Add selectable model IDs as a comma-separated list in `OPENAI_ALLOWED_MODELS`.
-7. For the official OpenAI API, leave `OPENAI_BASE_URL` unset. For an OpenAI-compatible gateway, set it to that provider's documented API base URL.
-8. Start from the `backend` directory: `uvicorn main:app --host 0.0.0.0 --port 8000`.
+On a Debian or Ubuntu build host:
 
-Never put a real key in Git, Android source code, an APK, screenshots, or chat messages. Keep it only in private server environment settings. Use HTTPS when deploying. Add authentication and rate limiting before exposing the backend publicly; the starter is not hardened for public production use.
+```sh
+sudo apt-get update
+sudo apt-get install -y live-build debootstrap squashfs-tools xorriso \
+  grub-pc-bin grub-efi-amd64-bin mtools
 
-## Build the Android app
+sudo lb config \
+  --distribution trixie \
+  --architectures amd64 \
+  --binary-images iso-hybrid \
+  --archive-areas "main contrib non-free-firmware" \
+  --bootappend-live "boot=live components username=limt hostname=limt-os"
 
-1. Open this repository in Android Studio.
-2. Wait for Gradle sync.
-3. Deploy the backend to an HTTPS host.
-4. Replace `https://YOUR_BACKEND_HOST` in `app/build.gradle.kts` with your backend base URL (without a trailing slash).
-5. Build and run the `app` configuration on an Android device.
-
-A Gradle wrapper is not included yet. Android Studio can import the project, but the app has not been built or device-tested in this repository.
-
-## Generated files
-
-Ask the assistant to output files using this format:
-
-```text
----FILE: relative/path/to/file.ext---
-complete file contents
+sudo lb build
 ```
 
-The backend returns file names and contents separately. The Android app displays a save action for each generated file.
+The generated ISO is normally named `live-image-amd64.hybrid.iso` in the repository root. GitHub Actions can also build it: run **Build Limt-OS x86_64 ISO** from the Actions tab. The workflow uploads the ISO and its SHA-256 checksum as an artifact.
 
-## Compatibility and safety limits
+## Repository layout
 
-This is a project generator, not an OS installer or flasher. It does not unlock bootloaders, flash partitions, install firmware, or bypass device protections. Hardware detection is best-effort and cannot prove that a phone has the required kernel sources, vendor files, drivers, or a supported build path. The compatibility profile database is currently a placeholder, so the app must not claim a device is compatible until a verified profile is added.
+- `.github/workflows/build-iso.yml`: automated ISO build
+- `build/iso/README.md`: build and virtual-machine notes
+- `config/package-lists/limt-os.list.chroot`: packages installed in the live image
+- `config/hooks/live/0100-limt-desktop.hook.chroot`: Limt-OS settings launcher setup
+- `docs/ISO-ROADMAP.md`: planned runtime, desktop, hardware, and ARM64 work
+- `THIRD_PARTY_NOTICES.md`: upstream projects and licensing notes
+- `backend/`: separate experimental AI helper; not required to boot or build the ISO
 
-Serial numbers are not needed for compatibility checks and are not collected. Android restricts access to persistent device identifiers for ordinary apps.
+## Roadmap — not implemented yet
+
+- Wine-based Windows application compatibility
+- Android runtime/container integration (requires Linux kernel and graphics support)
+- Package metadata inspection for PE, APK, AAB, and IPA files
+- Native process inspector and developer console
+- A Limt-OS desktop shell and hardware-specific configuration
+- A separate ARM64 image
+
+These are plans, not current capabilities. An APK or IPA is not directly executable by Linux; each needs an appropriate runtime. The iOS-only projects in the research notes are not drop-in Linux runtimes.
+
+## Virtual-machine testing
+
+The x86_64 ISO can be tested in UTM or another x86_64-capable hypervisor. On Apple Silicon, x86_64 requires emulation and will be slower than an ARM64 guest. An ARM64 Limt-OS image is a separate future target.
+
+The live image may use the default account `limt` with password `live`, depending on the Debian Live version. Change this before any public or distributable release.
