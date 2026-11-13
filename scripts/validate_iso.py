@@ -33,6 +33,8 @@ def main() -> int:
     try:
         files = run_xorriso(iso, "-find", "/", "-type", "f", "-exec", "lsdl")
         dirs = run_xorriso(iso, "-find", "/", "-type", "d", "-exec", "lsdl")
+        source_dispatcher = run_xorriso(iso, "-find", "/", "-name", "dispatcher.py", "-exec", "lsdl")
+        installed_dispatcher = run_xorriso(iso, "-find", "/", "-name", "limt-dispatch", "-exec", "lsdl")
         boot = run_xorriso(iso, "-report_el_torito", "plain")
     except RuntimeError as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
@@ -43,7 +45,8 @@ def main() -> int:
         "Linux kernel": re.search(r"/live/vmlinuz[^\s]*", inventory) is not None,
         "Live initramfs": re.search(r"/live/initrd[^\s]*", inventory) is not None,
         "Compressed live filesystem": "/live/filesystem.squashfs" in inventory,
-        "Limt-OS source dispatcher": "/usr/share/limt-os/src/limt/dispatcher.py" in inventory,
+        "Limt-OS source dispatcher": "dispatcher.py" in source_dispatcher.lower(),
+        "Installed Limt-OS command": "limt-dispatch" in installed_dispatcher.lower(),
         "BIOS El Torito entry": "bios" in boot.lower(),
         "UEFI El Torito entry": "uefi" in boot.lower(),
     }
