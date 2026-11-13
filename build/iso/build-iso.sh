@@ -3,7 +3,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 WORK="${ROOT}/build/iso/work"
-OUT="${ROOT}/dist"
+OUT="${ROOT}/out"
 ARCH="${ARCH:-amd64}"
 
 if [[ "$ARCH" != "amd64" ]]; then
@@ -15,7 +15,9 @@ if [[ "$(id -u)" -ne 0 ]]; then
   exit 1
 fi
 command -v lb >/dev/null || { echo "Install live-build first." >&2; exit 127; }
+
 mkdir -p "$WORK" "$OUT"
+rm -f "$OUT/limt-os-amd64.iso" "$OUT/limt-os-amd64.iso.sha256"
 cd "$WORK"
 lb clean --purge || true
 
@@ -44,18 +46,24 @@ cp "$ROOT/build/iso/package-list.chroot" config/package-lists/limt-os.list.chroo
 install -m 0755 "$ROOT/scripts/omni-exec.py" config/includes.chroot/usr/local/bin/omni-exec
 install -m 0755 "$ROOT/build/iso/limt-welcome" config/includes.chroot/usr/local/bin/limt-welcome
 cp -R "$ROOT/src/limt" config/includes.chroot/usr/local/lib/limt-os/
-printf '%s\n' '#!/usr/bin/env python3' 'import sys' 'sys.path.insert(0, "/usr/local/lib/limt-os")' 'from limt.dispatcher import main' 'raise SystemExit(main())' > config/includes.chroot/usr/local/bin/limt-dispatch
+printf '%s\\n' '#!/usr/bin/env python3' 'import sys' 'sys.path.insert(0, "/usr/local/lib/limt-os")' 'from limt.dispatcher import main' 'raise SystemExit(main())' > config/includes.chroot/usr/local/bin/limt-dispatch
 chmod 0755 config/includes.chroot/usr/local/bin/limt-dispatch
 
+# Build in the live-build work directory, then place the finished image in
+# the dedicated repository-root out/ directory.
 lb build
 ISO="$(find . -maxdepth 1 -type f -name '*.iso' -print -quit)"
 if [[ -z "$ISO" ]]; then
   echo "live-build completed but did not produce an ISO." >&2
   exit 1
 fi
-cp "$ISO" "$OUT/limt-os-amd64.iso"
+
+install -m 0644 "$ISO" "$OUT/limt-os-amd64.iso"
 (
   cd "$OUT"
   sha256sum limt-os-amd64.iso > limt-os-amd64.iso.sha256
+  sha256sum --check limt-os-amd64.iso.sha256
 )
+
 echo "Created: $OUT/limt-os-amd64.iso"
+echo "Checksum: $OUT/limt-os-amd64.iso.sha256"
