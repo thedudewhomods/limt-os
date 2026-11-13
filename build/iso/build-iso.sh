@@ -30,7 +30,7 @@ lb config \
   --architectures amd64 \
   --binary-images iso-hybrid \
   --archive-areas "main contrib non-free-firmware" \
-  --bootloaders grub-efi \
+  --bootloaders "grub-pc,grub-efi" \
   --debian-installer none \
   --apt-recommends true \
   --keyring-packages debian-archive-keyring \
@@ -41,11 +41,12 @@ lb config \
   --mirror-binary-security http://security.debian.org/debian-security/ \
   --bootappend-live "boot=live components username=limt hostname=limt-os quiet"
 
-mkdir -p config/package-lists config/includes.chroot/usr/local/bin config/includes.chroot/usr/local/lib/limt-os
+mkdir -p config/package-lists config/includes.chroot/usr/local/bin config/includes.chroot/usr/local/lib/limt-os config/includes.chroot/usr/share/limt-os/src
 cp "$ROOT/build/iso/package-list.chroot" config/package-lists/limt-os.list.chroot
 install -m 0755 "$ROOT/scripts/omni-exec.py" config/includes.chroot/usr/local/bin/omni-exec
 install -m 0755 "$ROOT/build/iso/limt-welcome" config/includes.chroot/usr/local/bin/limt-welcome
 cp -R "$ROOT/src/limt" config/includes.chroot/usr/local/lib/limt-os/
+cp -R "$ROOT/src/." config/includes.chroot/usr/share/limt-os/src/
 printf '%s\n' '#!/usr/bin/env python3' 'import sys' 'sys.path.insert(0, "/usr/local/lib/limt-os")' 'from limt.dispatcher import main' 'raise SystemExit(main())' > config/includes.chroot/usr/local/bin/limt-dispatch
 chmod 0755 config/includes.chroot/usr/local/bin/limt-dispatch
 
@@ -59,6 +60,7 @@ if [[ -z "$ISO" ]]; then
 fi
 
 install -m 0644 "$ISO" "$OUT/limt-os-amd64.iso"
+python3 "$ROOT/scripts/validate_iso.py" "$OUT/limt-os-amd64.iso"
 (
   cd "$OUT"
   sha256sum limt-os-amd64.iso > limt-os-amd64.iso.sha256
