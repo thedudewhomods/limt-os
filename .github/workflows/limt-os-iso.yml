@@ -41,17 +41,21 @@ jobs:
               bash build/iso/build-iso.sh
             '
 
-      - name: Verify ISO and checksum
+      - name: Verify ISO and checksum in out directory
         run: |
-          test -s dist/limt-os-amd64.iso
-          test -s dist/limt-os-amd64.iso.sha256
-          sha256sum -c dist/limt-os-amd64.iso.sha256
+          set -euo pipefail
+          test -s out/limt-os-amd64.iso
+          test -s out/limt-os-amd64.iso.sha256
+          (
+            cd out
+            sha256sum --check limt-os-amd64.iso.sha256
+          )
 
       - uses: actions/upload-artifact@v4
         with:
           name: limt-os-amd64-iso
           path: |
-            dist/limt-os-amd64.iso
-            dist/limt-os-amd64.iso.sha256
+            out/limt-os-amd64.iso
+            out/limt-os-amd64.iso.sha256
           if-no-files-found: error
           retention-days: 14
