@@ -46,7 +46,7 @@ cp "$ROOT/build/iso/package-list.chroot" config/package-lists/limt-os.list.chroo
 install -m 0755 "$ROOT/scripts/omni-exec.py" config/includes.chroot/usr/local/bin/omni-exec
 install -m 0755 "$ROOT/build/iso/limt-welcome" config/includes.chroot/usr/local/bin/limt-welcome
 cp -R "$ROOT/src/limt" config/includes.chroot/usr/local/lib/limt-os/
-printf '%s\\n' '#!/usr/bin/env python3' 'import sys' 'sys.path.insert(0, "/usr/local/lib/limt-os")' 'from limt.dispatcher import main' 'raise SystemExit(main())' > config/includes.chroot/usr/local/bin/limt-dispatch
+printf '%s\n' '#!/usr/bin/env python3' 'import sys' 'sys.path.insert(0, "/usr/local/lib/limt-os")' 'from limt.dispatcher import main' 'raise SystemExit(main())' > config/includes.chroot/usr/local/bin/limt-dispatch
 chmod 0755 config/includes.chroot/usr/local/bin/limt-dispatch
 
 # Build in the live-build work directory, then place the finished image in
