@@ -14,7 +14,7 @@ sudo bash build/iso/build-iso.sh
 
 The script explicitly pins the bootstrap/chroot/binary mirrors to Debian Bookworm. The archive-signing keyring must be installed; the missing keyring warning and Ubuntu trixie URL in earlier CI logs were caused by an unpinned mirror/keyring configuration. The subsequent `chroot /usr/bin/env` error was a cascade after debootstrap failed, not a separate root cause.
 
-The image and checksum are written to `dist/limt-os-amd64.iso` and `dist/limt-os-amd64.iso.sha256`.
+The image and checksum are written to `out/limt-os-amd64.iso` and `out/limt-os-amd64.iso.sha256`.
 
 ## Virtual machines
 
